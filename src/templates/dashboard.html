@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Gastos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/styles.css') }}">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <h1>SEGUIMIENTO DE GASTOS</h1>
+        </header>
+        
+        <section class="stats">
+            <div class="stat-card green">
+                <p><i class="fas fa-file-invoice"></i> Número de Facturas</p>
+                <h2>{{ total_facturas }}</h2>
+            </div>
+            <div class="stat-card green">
+                <p><i class="fas fa-euro-sign"></i> Gasto Total</p>
+                <h2>{{ total_importe }} €</h2>
+            </div>
+            <div class="stat-card green">
+                <p><i class="fas fa-receipt"></i> Gasto Medio por Factura</p>
+                <h2>{{ gasto_promedio }} €</h2>
+            </div>
+            <div class="stat-card green">
+                <p><i class="fas fa-truck"></i> Número de Proveedores</p>
+                <h2>{{ total_proveedores }}</h2>
+            </div>
+        </section>
+        
+        <section class="chart">
+            <h2>Evolución mensual de los gastos</h2>
+            <canvas id="monthlyChart"></canvas>
+        </section>
+
+        <section class="chart">
+            <h2>Gasto por Proveedor</h2>
+            <canvas id="providerChart"></canvas>
+        </section>
+        
+        <section class="top-invoices">
+            <h2>Facturas de Mayor Importe</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Factura</th>
+                        <th>Importe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for factura, importe in facturas_mayor_importe %}
+                    <tr>
+                        <td>{{ factura }}</td>
+                        <td>{{ importe }} €</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: {{ labels | tojson }},
+                    datasets: [{
+                        label: 'Gasto (€)',
+                        data: {{ gastos | tojson }},
+                        backgroundColor: 'limegreen'
+                    }]
+                }
+            });
+
+            const ctx2 = document.getElementById('providerChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: {{ labels | tojson }},
+                    datasets: [{
+                        label: 'Gasto (€)',
+                        data: {{ gastos | tojson }},
+                        backgroundColor: 'dodgerblue'
+                    }]
+                }
+            });
+        });
+    </script>
+</body>
+</html>

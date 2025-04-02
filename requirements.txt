@@ -1,0 +1,8 @@
+pandas
+sqlalchemy
+openai
+dotenv
+PyMuPDF
+plotly
+flask
+numpy

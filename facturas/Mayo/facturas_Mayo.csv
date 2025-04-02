@@ -1,0 +1,11 @@
+fecha_factura;proveedor;concepto;importe;moneda
+14/05/2025;Proveedor B;Mantenimiento de equipos;638.76;dolares
+29/05/2025;Proveedor J;Servicio de hosting;127.89;euros
+08/05/2025;Proveedor H;Consultoría TI;734.99;euros
+06/05/2025;Proveedor A;Mantenimiento de equipos;161.29;dolares
+24/05/2025;Proveedor H;Consultoría TI;469.72;dolares
+06/05/2025;Proveedor G;Mantenimiento de equipos;499.67;euros
+24/05/2025;Proveedor F;Consultoría TI;553.55;euros
+25/05/2025;Proveedor B;Desarrollo web;828.79;euros
+26/05/2025;Proveedor F;Compra de software;609.9;dolares
+23/05/2025;Proveedor H;Desarrollo web;220.71;dolares

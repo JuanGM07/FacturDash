@@ -1,0 +1,11 @@
+fecha_factura;proveedor;concepto;importe;moneda
+21/09/2025;Proveedor B;Compra de software;841.12;euros
+01/09/2025;Proveedor G;Desarrollo web;346.88;dolares
+17/09/2025;Proveedor G;Compra de software;596.93;euros
+22/09/2025;Proveedor E;Mantenimiento de equipos;881.61;euros
+21/09/2025;Proveedor B;Consultoría TI;997.75;dolares
+23/09/2025;Proveedor B;Servicio de hosting;909.87;euros
+19/09/2025;Proveedor H;Compra de software;826.71;euros
+23/09/2025;Proveedor G;Consultoría TI;871.31;euros
+06/09/2025;Proveedor G;Mantenimiento de equipos;310.4;dolares
+21/09/2025;Proveedor F;Compra de software;439.53;dolares
