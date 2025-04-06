@@ -1,67 +1,50 @@
 import os
 import random
-import csv
-from datetime import datetime, timedelta
 import calendar
+from datetime import datetime
+from fpdf import FPDF
 
-# Directorio donde se almacenarán las facturas
-BASE_DIR = './facturas/'
+# Crear directorio para guardar PDFs
+output_dir = "facturas_pdf"
+os.makedirs(output_dir, exist_ok=True)
 
-# Lista de meses
-MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+# Ruta a la fuente
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FONT_PATH = os.path.join(BASE_DIR,"src", "static", "fonts", "DejaVuSans.ttf")
 
-# Lista de proveedores de ejemplo
-PROVEEDORES = [
-    "Proveedor A", "Proveedor B", "Proveedor C", "Proveedor D", "Proveedor E", 
-    "Proveedor F", "Proveedor G", "Proveedor H", "Proveedor I", "Proveedor J"
-]
+# Verificar si la fuente existe
+assert os.path.exists(FONT_PATH), f"No se encontró la fuente en {FONT_PATH}"
 
-# Lista de conceptos específicos
-CONCEPTOS = ['Servicio de hosting', 'Compra de software', 'Consultoría TI', 'Desarrollo web', 'Mantenimiento de equipos']
+# Datos ficticios
+proveedores = ["Amazon", "IKEA", "Carrefour", "Mercadona", "Leroy Merlin"]
+conceptos = ["Compra de suministros", "Material de oficina", "Reparaciones", "Servicios", "Renovaciones"]
 
-# Función para generar una fecha aleatoria dentro de un mes
-def generar_fecha_aleatoria(mes):
-    year = datetime.now().year
-    month = MESES.index(mes) + 1
-    _, last_day = calendar.monthrange(year, month)
-    primer_dia = datetime(year, month, 1)
-    ultimo_dia = datetime(year, month, last_day)
-    delta = ultimo_dia - primer_dia
-    fecha_aleatoria = primer_dia + timedelta(days=random.randint(0, delta.days))
-    return fecha_aleatoria.strftime('%d/%m/%Y')
+class PDF(FPDF):
+    def header(self):
+        self.set_font("DejaVu", "", 14)
+        self.cell(0, 10, "Factura", ln=True, align='C')
 
-# Función para generar una factura de forma aleatoria
-def generar_factura(mes, numero_factura):
-    fecha_factura = generar_fecha_aleatoria(mes)
-    proveedor = random.choice(PROVEEDORES)
-    concepto = random.choice(CONCEPTOS)
-    importe = round(random.uniform(10.0, 1000.0), 2)
-    moneda = "euros" if random.random() > 0.5 else "dolares"
-    
-    return {
-        'fecha_factura': fecha_factura,
-        'proveedor': proveedor,
-        'concepto': concepto,
-        'importe': importe,
-        'moneda': moneda
-    }
+def generar_facturas():
+    for mes in range(1, 13):
+        for i in range(2):  # Dos facturas por mes
+            proveedor = random.choice(proveedores)
+            concepto = random.choice(conceptos)
+            importe = round(random.uniform(100, 1000), 2)
+            dia = random.randint(1, calendar.monthrange(2023, mes)[1])
+            fecha = datetime(2023, mes, dia).strftime("%d/%m/%Y")
 
-# Crear subcarpetas para cada mes y generar facturas
-for mes in MESES:
-    subcarpeta = os.path.join(BASE_DIR, mes)
-    os.makedirs(subcarpeta, exist_ok=True)
-    
-    facturas_mes = []
-    for i in range(5):  # Generamos 5 facturas por mes
-        factura = generar_factura(mes, i + 1)
-        facturas_mes.append(factura)
-        
-        # Guardar las facturas en un archivo CSV dentro de la subcarpeta correspondiente
-        archivo_csv = os.path.join(subcarpeta, f"facturas_{mes}.csv")
-        with open(archivo_csv, mode='a', newline='') as archivo:
-            writer = csv.DictWriter(archivo, fieldnames=factura.keys(), delimiter=';')
-            if archivo.tell() == 0:
-                writer.writeheader()
-            writer.writerow(factura)
-    
-    print(f"Facturas generadas para el mes de {mes}")
+            pdf = PDF()
+            pdf.add_font("DejaVu", "", FONT_PATH, uni=True)  # REGISTRAR PRIMERO
+            pdf.set_font("DejaVu", "", 12)
+            pdf.add_page()  # AHORA sí puedes agregar la página
+
+            pdf.cell(100, 10, txt=f"Fecha: {fecha}", ln=True)
+            pdf.cell(100, 10, txt=f"Proveedor: {proveedor}", ln=True)
+            pdf.cell(100, 10, txt=f"Concepto: {concepto}", ln=True)
+            pdf.cell(100, 10, txt=f"Importe: {importe} €", ln=True)
+
+            filename = f"factura_{mes:02d}_{i+1}.pdf"
+            pdf.output(os.path.join(output_dir, filename))
+
+generar_facturas()
+print("Facturas generadas en:", output_dir)

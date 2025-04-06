@@ -1,69 +1,64 @@
 import os
 import pandas as pd
-import json
 from flask import Flask, render_template
-import plotly.express as px
+from datetime import datetime
+from extractor import cargar_facturas
 
 app = Flask(__name__)
 
-FACTURAS_DIR = "facturas"
-
-def cargar_facturas():
-    """Carga las facturas desde subcarpetas dentro de la carpeta 'facturas'."""
-    all_files = []
-    for root, dirs, files in os.walk(FACTURAS_DIR):
-        for file in files:
-            if file.endswith(".csv"):
-                all_files.append(os.path.join(root, file))
-    
-    if not all_files:
-        return None
-    
-    df_list = [pd.read_csv(f, delimiter=';', parse_dates=['fecha_factura'], dayfirst=True) for f in all_files]
-    df_total = pd.concat(df_list, ignore_index=True)
-    return df_total
+FACTURAS_DIR = "facturas_pdf"
 
 def generar_dashboard():
-    df_total = cargar_facturas()
-    if df_total is None:
-        return None, None, 0, 0, 0, [], [], []
+    df = cargar_facturas()
+    if df.empty:
+        return {}
+
+    df['mes'] = df['fecha_factura'].dt.strftime('%Y-%m')
     
-    total_facturas = len(df_total)
-    total_importe = df_total["importe"].sum()
-    gasto_promedio = total_importe / total_facturas if total_facturas else 0
-    
+    # Métricas clave
+    total_facturas = len(df)
+    total_importe = df["importe"].sum()
+    gasto_promedio = round(total_importe / total_facturas, 2)
+    importe_max = df["importe"].max()
+    importe_min = df["importe"].min()
+    desviacion = round(df["importe"].std(), 2)
+    total_proveedores = df["proveedor"].nunique()
+    # Gastos por concepto
+    gasto_concepto = df.groupby("concepto")["importe"].sum().reset_index()
+    gasto_concepto = gasto_concepto.sort_values(by="importe", ascending=False).head(5)
+    concepto_data = round(gasto_concepto[['concepto', 'importe']],2).values.tolist()  # Convertir a lista
+
     # Evolución mensual
-    df_total['mes'] = df_total['fecha_factura'].dt.strftime('%Y-%m')
-    gastos_mes = df_total.groupby('mes')["importe"].sum().reset_index()
-    labels = gastos_mes["mes"].tolist()
-    gastos = gastos_mes["importe"].tolist()
-    fig_mes = px.bar(gastos_mes, x="mes", y="importe", title="Evolución Mensual de Gastos")
-    
-    # Gastos por proveedor
-    gasto_proveedor = df_total.groupby("proveedor")["importe"].sum().reset_index()
-    gasto_proveedor = gasto_proveedor.sort_values(by="importe", ascending=False).head(10)
-    fig_proveedor = px.pie(gasto_proveedor, names="proveedor", values="importe", title="Gasto por Proveedor")
-    
-    # Facturas de mayor importe
-    facturas_mayor_importe = df_total.sort_values(by="importe", ascending=False)[["fecha_factura", "importe"]].head(5).values.tolist()
-    
-    return fig_mes.to_json(), fig_proveedor.to_json(), total_facturas, total_importe, gasto_promedio, labels, gastos, facturas_mayor_importe
+    gastos_mes = df.groupby('mes')["importe"].sum().reset_index()
+    labels_mes = gastos_mes["mes"].tolist()
+    datos_mes = gastos_mes["importe"].tolist()
+
+    # Gasto por proveedor
+    gasto_proveedor = df.groupby("proveedor")["importe"].sum().reset_index()
+    gasto_proveedor = gasto_proveedor.sort_values(by="importe", ascending=False).head(5)
+
+    # Facturas más caras
+    facturas_top = df.sort_values(by="importe", ascending=False)[["fecha_factura", "importe"]].head(5).values.tolist()
+
+    return {
+        "total_facturas": total_facturas,
+        "total_importe": total_importe,
+        "gasto_promedio": gasto_promedio,
+        "importe_max": importe_max,
+        "importe_min": importe_min,
+        "desviacion": desviacion,
+        "total_proveedores": total_proveedores,
+        "labels_mes": labels_mes,
+        "datos_mes": datos_mes,
+        "gasto_proveedor": gasto_proveedor.values.tolist(),
+        "facturas_top": facturas_top,
+        "concepto_data":concepto_data
+    }
 
 @app.route("/")
 def index():
-    fig_mes, fig_proveedor, total_facturas, total_importe, gasto_promedio, labels, gastos, facturas_mayor_importe = generar_dashboard()
-    return render_template(
-        "dashboard.html",
-        total_facturas=total_facturas,
-        total_importe=total_importe,
-        gasto_promedio=gasto_promedio,
-        fig_mes=fig_mes,
-        fig_proveedor=fig_proveedor,
-        labels=labels,
-        gastos=gastos,
-        facturas_mayor_importe=facturas_mayor_importe
-    )
+    data = generar_dashboard()
+    return render_template("dashboard.html", **data)
 
 if __name__ == "__main__":
     app.run(debug=True)
-

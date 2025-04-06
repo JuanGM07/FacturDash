@@ -2,94 +2,159 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <title>Dashboard de Gastos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seguimiento de Gastos</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='/css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-areas:
+                "header header"
+                "stats charts"
+                "top5 charts";
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        header {
+            grid-area: header;
+            text-align: center;
+            background: #1e1e2f;
+            color: white;
+            padding: 20px;
+            font-size: 28px;
+        }
+        .stats {
+            grid-area: stats;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .stat {
+            background: white;
+            padding: 15px;
+            border-left: 5px solid #007BFF;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        .charts {
+            grid-area: charts;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+        }
+        .top5 {
+            grid-area: top5;
+            background: white;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+        }
+        th, td {
+            text-align: left;
+            padding: 6px;
+        }
+    </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <header>
-            <h1>SEGUIMIENTO DE GASTOS</h1>
-        </header>
-        
-        <section class="stats">
-            <div class="stat-card green">
-                <p><i class="fas fa-file-invoice"></i> Número de Facturas</p>
-                <h2>{{ total_facturas }}</h2>
-            </div>
-            <div class="stat-card green">
-                <p><i class="fas fa-euro-sign"></i> Gasto Total</p>
-                <h2>{{ total_importe }} €</h2>
-            </div>
-            <div class="stat-card green">
-                <p><i class="fas fa-receipt"></i> Gasto Medio por Factura</p>
-                <h2>{{ gasto_promedio }} €</h2>
-            </div>
-            <div class="stat-card green">
-                <p><i class="fas fa-truck"></i> Número de Proveedores</p>
-                <h2>{{ total_proveedores }}</h2>
-            </div>
-        </section>
-        
-        <section class="chart">
-            <h2>Evolución mensual de los gastos</h2>
-            <canvas id="monthlyChart"></canvas>
-        </section>
+    <div class="dashboard">
+        <header>Dashboard de Seguimiento de Gastos</header>
 
-        <section class="chart">
-            <h2>Gasto por Proveedor</h2>
-            <canvas id="providerChart"></canvas>
-        </section>
-        
-        <section class="top-invoices">
-            <h2>Facturas de Mayor Importe</h2>
+        <div class="stats">
+            <div class="stat"><strong>Total facturas:</strong> {{ total_facturas }}</div>
+            <div class="stat"><strong>Gasto total:</strong> {{ total_importe }} €</div>
+            <div class="stat"><strong>Gasto medio:</strong> {{ gasto_promedio }} €</div>
+            <div class="stat"><strong>Factura más alta:</strong> {{ importe_max }} €</div>
+            <div class="stat"><strong>Factura más baja:</strong> {{ importe_min }} €</div>
+            <div class="stat"><strong>Desviación estándar:</strong> {{ desviacion }} €</div>
+            <div class="stat"><strong>Total proveedores:</strong> {{ total_proveedores }}</div>
+        </div>
+
+        <div class="charts">
+            <div class="chart-container">
+                <h3>Evolución mensual</h3>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Top 5 Proveedores por Gasto</h3>
+                <canvas id="providerChart"></canvas>
+                <section class="top-concepts">
+                    <h2>Mayores Gastos por Concepto</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Importe (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in concepto_data %}
+                            <tr>
+                                <td>{{ item[0] }}</td>  <!-- Concepto -->
+                                <td>{{ item[1] }} €</td>  <!-- Importe -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </section>
+                
+            </div>
+            
+        </div>
+
+        <div class="top5">
+            <h3>Facturas más caras</h3>
             <table>
                 <thead>
-                    <tr>
-                        <th>Factura</th>
-                        <th>Importe</th>
-                    </tr>
+                    <tr><th>Fecha</th><th>Importe</th></tr>
                 </thead>
                 <tbody>
-                    {% for factura, importe in facturas_mayor_importe %}
-                    <tr>
-                        <td>{{ factura }}</td>
-                        <td>{{ importe }} €</td>
-                    </tr>
+                    {% for fecha, importe in facturas_top %}
+                    <tr><td>{{ fecha }}</td><td>{{ importe }} €</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </section>
+        </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const ctx1 = document.getElementById('monthlyChart').getContext('2d');
-            new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: {{ labels | tojson }},
-                    datasets: [{
-                        label: 'Gasto (€)',
-                        data: {{ gastos | tojson }},
-                        backgroundColor: 'limegreen'
-                    }]
-                }
-            });
 
-            const ctx2 = document.getElementById('providerChart').getContext('2d');
-            new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: {{ labels | tojson }},
-                    datasets: [{
-                        label: 'Gasto (€)',
-                        data: {{ gastos | tojson }},
-                        backgroundColor: 'dodgerblue'
-                    }]
-                }
-            });
+    <script>
+        const labelsMes = {{ labels_mes | tojson }};
+        const datosMes = {{ datos_mes | tojson }};
+        new Chart(document.getElementById('monthlyChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labelsMes,
+                datasets: [{
+                    label: 'Gasto (€)',
+                    data: datosMes,
+                    backgroundColor: '#28a745'
+                }]
+            }
+        });
+
+        const proveedores = {{ gasto_proveedor | tojson }};
+        new Chart(document.getElementById('providerChart').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: proveedores.map(p => p[0]),
+                datasets: [{
+                    label: 'Gasto (€)',
+                    data: proveedores.map(p => p[1]),
+                    backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#dc3545', '#28a745']
+                }]
+            }
         });
     </script>
 </body>
